@@ -10,12 +10,10 @@
         io.github.hive-agi/hive-weave  {:mvn/version "0.2.9"}
         ;; IPathQuery + IFilesystem — path questions and filesystem mutations
         ;; go through hive-system, never raw java.io.
-        io.github.hive-agi/hive-system
-        {:git/url "https://github.com/hive-agi/hive-system"
-         :git/sha "98cab713c582b0971de315aa0c2611897fbcdf64"}
+        io.github.hive-agi/hive-system {:mvn/version "0.3.1"}
         io.github.BuddhiLW/vtranslate-engine
         {:git/url "https://github.com/BuddhiLW/vtranslate-engine"
-         :git/sha "6d4427389f775439dbfccb99d051a970732c6b3f"}}
+         :git/sha "0f36361463e4819bf428645d1c85218a2c061556"}}
 
  :aliases
  {:test {:extra-paths ["test"]
