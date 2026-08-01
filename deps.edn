@@ -2,10 +2,17 @@
  ;; Public coordinates only. A machine-local :local/root override for the sibling
  ;; engine checkout belongs in local.deps.edn (gitignored) — never a host path here.
  :deps {org.clojure/clojure {:mvn/version "1.12.1"}
-        io.github.hive-agi/hive-dsl {:git/tag "v0.5.1" :git/sha "335869e"}
-        ;; IPathQuery — path existence/kind questions go through hive-system,
-        ;; never raw java.io predicates.
-        io.github.hive-agi/hive-system {:git/tag "v0.2.4" :git/sha "0706c57"}
+        ;; The engine pins these as GIT coords and hive-system as MVN; tools.deps
+        ;; cannot compare the two forms, so they are fixed here at top level —
+        ;; a top-level declaration beats every transitive.
+        io.github.hive-agi/hive-dsl    {:mvn/version "0.5.8"}
+        io.github.hive-agi/hive-events {:mvn/version "0.5.6"}
+        io.github.hive-agi/hive-weave  {:mvn/version "0.2.9"}
+        ;; IPathQuery + IFilesystem — path questions and filesystem mutations
+        ;; go through hive-system, never raw java.io.
+        io.github.hive-agi/hive-system
+        {:git/url "https://github.com/hive-agi/hive-system"
+         :git/sha "98cab713c582b0971de315aa0c2611897fbcdf64"}
         io.github.BuddhiLW/vtranslate-engine
         {:git/url "https://github.com/BuddhiLW/vtranslate-engine"
          :git/sha "6d4427389f775439dbfccb99d051a970732c6b3f"}}

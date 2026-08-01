@@ -1,15 +1,14 @@
 (ns vtranslate.fetch.adapters.ytdlp
   "ISourceFetcher over the yt-dlp binary. One process per job; the file lands in
    a per-job directory so two concurrent jobs on the same URL cannot collide.
-   Path existence is asked of hive-system (IPathQuery); the directory it writes
-   into comes from an injected IFetchWorkspace."
+   Filesystem work goes through hive-system: IPathQuery for existence,
+   IFilesystem for the directory it writes into."
   (:require [clojure.java.shell :as shell]
             [hive-dsl.result :as r]
             [hive-system.fs.core :as fsq]
+            [hive-system.fs.filesystem :as hfs]
             [vtranslate.engine.port.fetcher :as port]
-            [vtranslate.fetch.adapters.workspace-local :as workspace-local]
-            [vtranslate.fetch.calc.ytdlp :as calc]
-            [vtranslate.fetch.port.workspace :as ws]))
+            [vtranslate.fetch.calc.ytdlp :as calc]))
 
 (def binary "yt-dlp")
 
@@ -29,18 +28,19 @@
          (and (r/ok? res) (true? (:ok res))))))
 
 (defn- target-dir
-  "Where this fetch may write: the caller's :dir, else the workspace temp root."
-  [workspace dir]
-  (r/let-ok [base (if-let [d (not-empty (str (or dir "")))]
-                    (r/ok d)
-                    (ws/temp-root workspace))]
-    (ws/ensure-dir! workspace base)))
+  "Where this fetch may write: the caller's :dir, else a fresh temp dir.
+   => (r/ok path) | (r/err :fs/mkdirs-failed|:fs/tmpdir-failed {...})"
+  [dir]
+  (r/let-ok [made (if-let [d (not-empty (str (or dir "")))]
+                    (hfs/mkdirs! d)
+                    (hfs/tmpdir! "vtranslate-fetch-"))]
+    (r/ok (:path made))))
 
-(defrecord YtDlpFetcher [opts workspace]
+(defrecord YtDlpFetcher [opts]
   port/ISourceFetcher
   (fetch-media [_ uri call-opts]
     (let [merged (merge opts call-opts)]
-      (r/let-ok [dir     (target-dir workspace (:dir merged))
+      (r/let-ok [dir     (target-dir (:dir merged))
                  fetched (calc/interpret
                           uri
                           (apply shell/sh (calc/command uri (assoc merged :dir dir))))]
@@ -55,11 +55,10 @@
   "Build the fetcher, refusing loudly when the binary is absent — the same
    fail-loud contract the engine's other optional-native adapters keep.
    => (r/ok fetcher) | (r/err :error/fetcher-unavailable {...})."
-  ([opts] (make-fetcher opts (workspace-local/make-workspace (:root opts))))
-  ([opts workspace]
-   (if (available?)
-     (r/ok (->YtDlpFetcher (or opts {}) workspace))
-     (r/err :error/fetcher-unavailable
-            {:provider :yt-dlp
-             :binary binary
-             :reason "yt-dlp is not on PATH — install it to translate from a URL"}))))
+  [opts]
+  (if (available?)
+    (r/ok (->YtDlpFetcher (or opts {})))
+    (r/err :error/fetcher-unavailable
+           {:provider :yt-dlp
+            :binary binary
+            :reason "yt-dlp is not on PATH — install it to translate from a URL"})))

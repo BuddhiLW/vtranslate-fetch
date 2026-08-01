@@ -38,16 +38,15 @@ provider refuses to build and says so — it never degrades quietly.
 | Layer | Namespace | |
 |---|---|---|
 | Pure | `calc.ytdlp` | argv, output parsing, exit → Result. No process, no disk. |
-| Port | `port.workspace` | the filesystem mutations a fetch needs |
 | Adapter | `adapters.ytdlp` | runs the binary |
-| Adapter | `adapters.workspace-local` | writes to local disk |
 | Registry | `providers.register` | `defmethod resolve-fetcher :yt-dlp` |
 | Facade | `addon` | IAddon shape, no compile-time hive-mcp dependency |
 
-Path *queries* go through hive-system's `IPathQuery` (`hive-system.fs.core`).
-hive-system declares `IFilesystem/fs-tmpdir!` but ships no implementation, so
-directory creation and temp-root selection sit behind `port.workspace` until it
-does; adopting it then is a new record, not a rewrite.
+All filesystem work goes through hive-system: `IPathQuery`
+(`hive-system.fs.core`) for existence, `IFilesystem`
+(`hive-system.fs.filesystem`) for creating the per-job directory. Building this
+addon is what surfaced that `IFilesystem` was declared but implemented nowhere;
+it now is, including `fs-mkdirs!`, added for exactly this case.
 
 ## Not yet: GrayJay sources
 
