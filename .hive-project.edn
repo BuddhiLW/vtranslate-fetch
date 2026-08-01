@@ -1,0 +1,14 @@
+;; hive-mcp project configuration
+;;
+;; vtranslate-fetch — source-fetching addon for vtranslate. Owns the adapters
+;; that turn a remote locator into a file on disk; the ISourceFetcher port it
+;; implements lives in the engine.
+
+{:project-id "vtranslate-fetch"
+ :parent-id "vtranslate"
+ :parent "vtranslate"
+ :project-type :module
+ :watch-dirs ["src" "test"]
+ :hot-reload false
+ :presets-path nil
+ :carto {:source-roots ["src" "test"]}}
