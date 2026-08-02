@@ -73,6 +73,16 @@
     (is (r/ok? res))
     (is (= "/tmp/a.mp4" (get-in res [:ok :local-path])))))
 
+(deftest a-landed-file-wins-over-a-nonzero-exit
+  (testing "yt-dlp keeps the exit code of a stream-level error even when a
+            fallback format landed the file; the printed after_move path wins"
+    (let [res (calc/interpret "https://host/x"
+                              {:exit 1 :out "/tmp/a.webm\tA Clip\t9\twebm"
+                               :err "ERROR: Unable to rename file\n"})]
+      (is (r/ok? res))
+      (is (= "/tmp/a.webm" (get-in res [:ok :local-path])))
+      (is (re-find #"Unable to rename" (get-in res [:ok :warning]))))))
+
 (deftest interpret-fails-loud-and-keeps-what-a-human-needs
   (testing "a non-zero exit carries the stderr tail"
     (let [res (calc/interpret "https://host/x"

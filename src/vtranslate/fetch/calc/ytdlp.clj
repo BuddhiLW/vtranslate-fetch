@@ -66,13 +66,16 @@
            not-empty))
 
 (defn interpret
-  "A finished yt-dlp invocation becomes a Result.
-   => (r/ok {:local-path .. :title .. :metadata ..})
+  "A finished yt-dlp invocation becomes a Result. A printed after_move path
+   wins over a non-zero exit: yt-dlp keeps the exit code of a stream-level
+   error even when a fallback format landed the file. The adapter re-checks
+   the path on disk. => (r/ok {:local-path .. :title .. :metadata ..})
     | (r/err :error/fetch-failed|:error/fetch-no-output {...})"
   [uri {:keys [exit out err]}]
   (let [parsed (parse-line out)]
     (cond
-      (and (zero? exit) parsed) (r/ok parsed)
+      parsed (r/ok (cond-> parsed
+                     (not (zero? exit)) (assoc :warning (stderr-tail err 5))))
 
       (zero? exit)
       (r/err :error/fetch-no-output
