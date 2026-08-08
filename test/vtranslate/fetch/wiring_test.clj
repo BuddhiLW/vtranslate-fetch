@@ -13,8 +13,13 @@
             [vtranslate.engine.wiring :as wiring]
             [vtranslate.fetch.providers.register]))
 
+(def ^:private no-ambient-config
+  "Routing input that reads no config file, so the operator's own
+   ~/.config/vtranslate/config.edn cannot decide what this suite asserts."
+  {:config-path (str (fs/path (fs/temp-dir) "vtranslate-absent-config.edn"))})
+
 (deftest with-no-provider-configured-the-port-refuses-loudly
-  (let [built (wiring/build-port :fetcher {})]
+  (let [built (wiring/build-port :fetcher no-ambient-config)]
     (is (r/ok? built) "a local job must not fail merely for lacking a fetcher")
     (let [res (port/fetch-media (:ok built) "https://host/x" {})]
       (is (= :error/no-source-fetcher (:error res)))
