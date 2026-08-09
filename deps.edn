@@ -11,9 +11,7 @@
         ;; IPathQuery + IFilesystem — path questions and filesystem mutations
         ;; go through hive-system, never raw java.io.
         io.github.hive-agi/hive-system {:mvn/version "0.3.1"}
-        io.github.BuddhiLW/vtranslate-engine
-        {:git/url "https://github.com/BuddhiLW/vtranslate-engine"
-         :git/sha "0f36361463e4819bf428645d1c85218a2c061556"}}
+        io.github.buddhilw/vtranslate-engine {:mvn/version "0.1.1"}}
 
  :aliases
  {:test {:extra-paths ["test"]
