@@ -36,6 +36,19 @@
                     (hfs/tmpdir! "vtranslate-fetch-"))]
     (r/ok (:path made))))
 
+(defn- ->engine-media
+  "The calc's flat record in the engine's ISourceFetcher vocabulary.
+   {:local-path .. :title .. :extension .. :duration-seconds ..}
+   => {:local-path .. :title .. :metadata {:ext .. :duration-s ..}}"
+  [{:keys [local-path title extension duration-seconds warning]}]
+  (let [metadata (cond-> {}
+                   extension        (assoc :ext extension)
+                   duration-seconds (assoc :duration-s duration-seconds))]
+    (cond-> {:local-path local-path}
+      title          (assoc :title title)
+      warning        (assoc :warning warning)
+      (seq metadata) (assoc :metadata metadata))))
+
 (defrecord YtDlpFetcher [opts]
   port/ISourceFetcher
   (fetch-media [_ uri call-opts]
@@ -45,7 +58,7 @@
                           uri
                           (apply shell/sh (calc/command uri (assoc merged :dir dir))))]
         (if (landed? fetched)
-          (r/ok fetched)
+          (r/ok (->engine-media fetched))
           (r/err :error/fetch-missing-file
                  {:source uri
                   :path (:local-path fetched)
