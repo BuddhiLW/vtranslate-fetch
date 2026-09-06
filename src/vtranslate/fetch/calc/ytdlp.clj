@@ -19,6 +19,12 @@
    filepath names the finished file rather than a part-file."
   "after_move:%(filepath)s\t%(title)s\t%(duration)s\t%(ext)s")
 
+(def ^:private probe-print-template
+  "One tab-separated line per item: how long the source is, then how big its
+   frames are. yt-dlp prints NA for a field the extractor has no value for,
+   so an audio-only source still answers with a duration."
+  "%(duration)s\t%(width)s\t%(height)s")
+
 (defn command
   "The argv that fetches `uri` into `dir`. `--print` implies quiet, so stdout
    carries the template and nothing else.
@@ -50,7 +56,9 @@
          ["--" uri]]))
 
 (defn probe-command
-  "The argv that asks how long `uri` is without downloading it.
+  "The argv that asks how long `uri` is and how big its frames are, without
+   downloading it. `--print` implies quiet, so stdout carries the template and
+   nothing else.
    opts: :binary :socket-timeout-s"
   [uri {:keys [binary socket-timeout-s]}]
   [(or (not-empty binary) default-binary)
@@ -61,7 +69,7 @@
    "--skip-download"
    "--socket-timeout" (str (or socket-timeout-s 15))
    "--retries" "1"
-   "--print" "%(duration)s"
+   "--print" probe-print-template
    "--" uri])
 
 (defn- parse-duration [s]
@@ -123,18 +131,50 @@
       (r/err :error/fetch-failed
              {:source uri :exit exit :message (stderr-tail err 5)}))))
 
+(defn- parse-dimension
+  "A pixel count yt-dlp printed. => positive long | nil for NA, blank, zero
+   or anything unparseable — a dimension a caller cannot draw with is absent
+   rather than nil-valued."
+  [s]
+  (when-let [n (some-> s str/trim not-empty)]
+    (try
+      (let [px (long (Double/parseDouble n))]
+        (when (pos? px) px))
+      (catch Exception _ nil))))
+
+(defn- parse-probe-line
+  "The last probe record yt-dlp printed that carries a usable duration.
+   Fields are read in `probe-print-template` order; each is trimmed
+   individually, since trimming the LINE would shift every column left when
+   the first field is empty.
+   => {:duration-seconds n :width px :height px} | nil"
+  [out]
+  (some->> (str/split-lines (str out))
+           (keep (fn [line]
+                   (let [[duration width height]
+                         (map str/trim (str/split line #"\t" -1))
+                         seconds (parse-duration duration)
+                         w       (parse-dimension width)
+                         h       (parse-dimension height)]
+                     ;; pos? is already false for NaN on every host, so no
+                     ;; explicit NaN test
+                     (when (and seconds (pos? seconds))
+                       (cond-> {:duration-seconds seconds}
+                         w (assoc :width w)
+                         h (assoc :height h))))))
+           last))
+
 (defn interpret-probe
-  "A finished probe becomes a duration, or an error the caller may ignore.
-   => (r/ok {:duration-seconds n})
+  "A finished probe becomes what the source measures, or an error the caller
+   may ignore. Frame dimensions ride along only when the extractor knew them;
+   a source that reports none still answers with its duration, so :width and
+   :height are absent rather than nil.
+   => (r/ok {:duration-seconds n :width px :height px})
     | (r/err :error/probe-timeout|:error/probe-failed|:error/probe-no-duration)"
   [{:keys [exit out timed-out?]}]
-  (let [seconds (some->> (str/split-lines (str out))
-                         (remove str/blank?)
-                         last
-                         parse-duration)]
+  (let [probed (parse-probe-line out)]
     (cond
       timed-out?                       (r/err :error/probe-timeout {})
-      ;; pos? is already false for NaN on every host, so no explicit NaN test
-      (and seconds (pos? seconds))     (r/ok {:duration-seconds seconds})
+      probed                           (r/ok probed)
       (not (zero? (long (or exit -1)))) (r/err :error/probe-failed {:exit exit})
       :else                            (r/err :error/probe-no-duration {}))))

@@ -64,24 +64,63 @@
     (is (= :error/fetch-timeout (:error res))
         "a caller retries a timeout and refunds a failure; they cannot share a key")))
 
-(deftest the-probe-asks-for-a-duration-without-downloading
+(deftest the-probe-asks-for-a-duration-and-a-frame-size-without-downloading
   (let [argv (calc/probe-command "https://host/x" {})]
     (is (some #{"--simulate"} argv))
     (is (some #{"--skip-download"} argv))
-    (is (some #{"%(duration)s"} argv))
+    (is (some #{"%(duration)s\t%(width)s\t%(height)s"} argv)
+        "one tab-separated template, in the field order interpret-probe reads")
+    (is (not-any? #{"%(duration)s"} argv)
+        "the fields travel as one --print template, not as three")
     (is (= "https://host/x" (last argv)))))
 
 (deftest interpret-probe-reads-a-duration-or-declines
-  (is (= 42.5 (get-in (calc/interpret-probe {:exit 0 :out "42.5\n"})
+  (is (= 42.5 (get-in (calc/interpret-probe {:exit 0 :out "42.5\t640\t360\n"})
                       [:ok :duration-seconds])))
+  (is (= 42.5 (get-in (calc/interpret-probe {:exit 0 :out "42.5\n"})
+                      [:ok :duration-seconds]))
+      "a record short of its trailing fields is still a duration")
   (is (= :error/probe-timeout
          (:error (calc/interpret-probe {:exit 1 :out "" :timed-out? true}))))
+  (is (= :error/probe-failed
+         (:error (calc/interpret-probe {:exit 1 :out ""}))))
   (is (= :error/probe-no-duration
-         (:error (calc/interpret-probe {:exit 0 :out "NA\n"})))
+         (:error (calc/interpret-probe {:exit 0 :out "NA\tNA\tNA\n"})))
       "a source that answers nothing usable is not a failure the caller must act on")
   (is (= :error/probe-no-duration
-         (:error (calc/interpret-probe {:exit 0 :out "0\n"})))
-      "a zero duration is no duration"))
+         (:error (calc/interpret-probe {:exit 0 :out "0\t640\t360\n"})))
+      "a zero duration is no duration, whatever its frames measure"))
+
+(deftest the-probe-measures-the-frame-a-remote-preview-would-otherwise-guess
+  (testing "a 360p source measures 640x360 — the caption preview no longer
+            has to assume 16:9 for a URL it never decoded"
+    (let [res (calc/interpret-probe {:exit 0 :out "42.5\t640\t360\n"})]
+      (is (r/ok? res))
+      (is (= 640 (get-in res [:ok :width])))
+      (is (= 360 (get-in res [:ok :height])))))
+  (testing "a portrait source is not silently widened"
+    (is (= [1080 1920]
+           ((juxt :width :height)
+            (:ok (calc/interpret-probe {:exit 0 :out "9\t1080\t1920\n"})))))))
+
+(deftest a-dimensionless-source-still-answers-with-its-duration
+  (let [probed (:ok (calc/interpret-probe {:exit 0 :out "42.5\tNA\tNA\n"}))]
+    (is (= 42.5 (:duration-seconds probed)))
+    (is (not (contains? probed :width))
+        "an unmeasured axis is absent, so nil cannot pass for a measurement")
+    (is (not (contains? probed :height))))
+  (is (not (contains? (:ok (calc/interpret-probe {:exit 0 :out "42.5\t0\t0\n"}))
+                      :width))
+      "zero pixels is no measurement")
+  (is (= 360 (get-in (calc/interpret-probe {:exit 0 :out "42.5\t\t360\n"})
+                     [:ok :height]))
+      "one known axis survives the other being blank"))
+
+(deftest the-probe-takes-the-last-record-that-measures-something
+  (let [probed (:ok (calc/interpret-probe
+                     {:exit 0 :out "NA\tNA\tNA\n9\t640\t360\n"}))]
+    (is (= 9.0 (:duration-seconds probed)))
+    (is (= 640 (:width probed)))))
 
 ;; --- reading what yt-dlp printed --------------------------------------------
 
