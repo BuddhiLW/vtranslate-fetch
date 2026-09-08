@@ -2,9 +2,11 @@
  ;; Public coordinates only. A machine-local :local/root override for the sibling
  ;; engine checkout belongs in local.deps.edn (gitignored) — never a host path here.
  ;; hive-system and vtranslate-engine are required by src (adapters/ytdlp.clj and
- ;; providers/register.clj), so they are base dependencies, not alias ones: an AOT
- ;; publish compiles those namespaces, and a consumer of the pom needs them
- ;; declared. Both resolve from Clojars.
+ ;; providers/register.clj), so they are base dependencies, not alias ones. In an
+ ;; alias they were absent from the published pom, so a consumer who resolved this
+ ;; coordinate got namespaces that cannot load. Both resolve from Clojars.
+ ;; Found by `clojure -T:build jar-aot`, which is the only build step that forces
+ ;; every src namespace to load: the suite runs WITH the aliases and never sees it.
  :deps {org.clojure/clojure                 {:mvn/version "1.12.5"}
         io.github.hive-agi/hive-dsl         {:mvn/version "0.5.19"}
         io.github.hive-agi/hive-system      {:mvn/version "0.3.8"}

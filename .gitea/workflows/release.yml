@@ -5,20 +5,10 @@ name: release
 # mints an immutable artifact. (Adding a tracked ./VERSION would switch this
 # lib to the pinned bump-and-tag mode with the same build.clj.)
 #
-# PRIVATE since the relicense: version.edn :publish is :gitea, so `deploy`
-# builds an AOT no-source jar and pushes it to the private Gitea Maven
-# registry. It used to be :clojars; 0.1.9 and earlier remain on Clojars under
-# AGPL-3.0-or-later, because a published Maven coordinate is immutable.
-#
 # Path-filtered to library sources so CI / README / test-only commits don't mint
 # an immutable pom.
 #
-# Secrets: MAVEN_USERNAME, MAVEN_TOKEN, MAVEN_URL — ORG-WIDE on vtranslate.
-# NOT GITEA_-prefixed (Gitea reserves that prefix). An unset secret expands to
-# the empty string, never an error, so these names must match the org secrets
-# exactly. MAVEN_TOKEN is the name hive-build's :gitea target reads
-# (:target/password-env); MAVEN_PASSWORD is accepted as a fallback because the
-# sibling vtranslate repos were set up under that name.
+# Secrets: CLOJARS_USERNAME and CLOJARS_PASSWORD.
 
 on:
   push:
@@ -41,10 +31,8 @@ jobs:
   release:
     runs-on: ubuntu-latest
     env:
-      MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
-      MAVEN_TOKEN: ${{ secrets.MAVEN_TOKEN }}
-      MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
-      MAVEN_URL: ${{ secrets.MAVEN_URL }}
+      CLOJARS_USERNAME: ${{ secrets.CLOJARS_USERNAME }}
+      CLOJARS_PASSWORD: ${{ secrets.CLOJARS_PASSWORD }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -74,47 +62,26 @@ jobs:
           sudo /tmp/clj-install.sh
           clojure --version
 
-      # deps-deploy resolves the repository id "hive-gitea" against BOTH the
-      # project's :mvn/repos and ~/.m2/settings.xml, so the id, the URL and the
-      # credentials have to agree in all three places or the deploy cannot find
-      # its target. Every dependency of this lib resolves from Clojars, so this
-      # exists for the PUSH, not for resolution.
-      - name: Materialize private-registry credentials
+      # A missing credential must not read as a quiet success. `if:` on the
+      # deploy step made an unset secret produce a green run that published
+      # nothing, which is indistinguishable from a release that worked.
+      - name: Require publish credentials
         run: |
-          set -euo pipefail
-          TOKEN="${MAVEN_TOKEN:-${MAVEN_PASSWORD:-}}"
-          if [ -z "$TOKEN" ] || [ -z "${MAVEN_URL:-}" ]; then
-            echo "::error::MAVEN_URL and MAVEN_TOKEN (or MAVEN_PASSWORD) must be set org-wide on vtranslate."
-            echo "This library is :publish :gitea, so with no credentials it cannot ship, and a silent skip"
-            echo "would look identical to a successful release."
+          set -uo pipefail
+          missing=
+          [ -n "${CLOJARS_USERNAME:-}" ] || missing="${missing} CLOJARS_USERNAME"
+          [ -n "${CLOJARS_PASSWORD:-}" ] || missing="${missing} CLOJARS_PASSWORD"
+          if [ -n "${missing}" ]; then
+            echo "::error::unset secret(s):${missing}. Nothing would be published."
             exit 1
           fi
-          echo "MAVEN_TOKEN=$TOKEN" >> "$GITHUB_ENV"
-          CLJ_CONFIG="${CLJ_CONFIG:-${XDG_CONFIG_HOME:+$XDG_CONFIG_HOME/clojure}}"
-          CLJ_CONFIG="${CLJ_CONFIG:-$HOME/.clojure}"
-          mkdir -p "$CLJ_CONFIG" "$HOME/.m2"
-          cat > "$CLJ_CONFIG/deps.edn" <<EOF
-          {:mvn/repos {"hive-gitea" {:url "${MAVEN_URL}"}}}
-          EOF
-          cat > "$HOME/.m2/settings.xml" <<EOF
-          <settings>
-            <servers>
-              <server>
-                <id>hive-gitea</id>
-                <username>${MAVEN_USERNAME}</username>
-                <password>${TOKEN}</password>
-              </server>
-            </servers>
-          </settings>
-          EOF
 
-      # Gate BEFORE the deploy: a published pom is immutable, so a red suite
-      # must not be able to mint a version and ship it.
+      # Gate BEFORE the deploy. A published Maven coordinate is immutable, so a
+      # red suite must not be able to mint a version and ship it.
       - name: Test
         run: clojure -M:test
 
-      # `deploy` reads version.edn :publish (:gitea) and builds the AOT
-      # no-source jar. Idempotent — a re-run at a version already in the
-      # registry HEAD-checks and skips.
+      # `deploy` reads version.edn :publish (:clojars). Idempotent — a re-run at a
+      # version already in the registry HEAD-checks and skips.
       - name: Deploy
         run: clojure -T:build deploy
