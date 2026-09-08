@@ -69,4 +69,8 @@ belongs — `deps.edn` carries public coordinates only.
 
 ## License
 
-AGPL-3.0-or-later. See [LICENSE](LICENSE).
+Proprietary, all rights reserved. See [LICENSE](LICENSE).
+
+Versions up to and including 0.1.9 were published to Clojars under AGPL-3.0-or-later
+and remain under that licence; a published Maven coordinate is immutable. This
+repository and every version after it are closed.

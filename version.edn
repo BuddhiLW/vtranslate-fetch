@@ -1,6 +1,6 @@
 {:lib      io.github.buddhilw/vtranslate-fetch
  :minor    1
- :license  {:name "AGPL-3.0-or-later" :url "https://www.gnu.org/licenses/agpl-3.0.html"}
+ :license  {:name "Proprietary" :url "https://gitea.hive-mcp.com/vtranslate/vtranslate-fetch"}
  :scm-url  "https://gitea.hive-mcp.com/vtranslate/vtranslate-fetch"
  :src-dirs ["src"]
- :publish  :clojars}
+ :publish  :gitea}
