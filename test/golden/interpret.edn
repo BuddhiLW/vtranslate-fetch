@@ -1,0 +1,37 @@
+{:empty
+ {:in {:exit 0, :out ""},
+  :out
+  {:error :error/fetch-no-output,
+   :source "https://example.invalid/video",
+   :reason "yt-dlp reported success but printed no destination path",
+   :message nil}},
+ :failed
+ {:in {:exit 2, :out "", :err "failure"},
+  :out
+  {:error :error/fetch-failed,
+   :source "https://example.invalid/video",
+   :exit 2,
+   :message "failure"}},
+ :fallback
+ {:in {:exit 1, :out "/tmp/a\tTitle\t5\tmp4", :err "fallback"},
+  :out
+  {:ok
+   {:local-path "/tmp/a",
+    :title "Title",
+    :extension "mp4",
+    :duration-seconds 5.0,
+    :warning "fallback"}}},
+ :ok
+ {:in {:exit 0, :out "/tmp/a\tTitle\t5\tmp4"},
+  :out
+  {:ok
+   {:local-path "/tmp/a",
+    :title "Title",
+    :extension "mp4",
+    :duration-seconds 5.0}}},
+ :timeout
+ {:in {:timed-out? true, :exit 0, :out "/tmp/a"},
+  :out
+  {:error :error/fetch-timeout,
+   :source "https://example.invalid/video",
+   :message nil}}}

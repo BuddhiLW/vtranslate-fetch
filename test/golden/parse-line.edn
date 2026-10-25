@@ -1,0 +1,16 @@
+{:columns
+ {:in " /tmp/a \t title \t12.5\tmp4\n",
+  :out
+  {:local-path "/tmp/a",
+   :title "title",
+   :extension "mp4",
+   :duration-seconds 12.5}},
+ :empty {:in "", :out nil},
+ :last
+ {:in "first\tA\t2\twebm\nsecond\tB\t3\tmp4\n",
+  :out
+  {:local-path "second",
+   :title "B",
+   :extension "mp4",
+   :duration-seconds 3.0}},
+ :missing-path {:in "\ttitle\t2\tmp4", :out nil}}

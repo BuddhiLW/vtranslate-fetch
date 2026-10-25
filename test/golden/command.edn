@@ -1,0 +1,55 @@
+{:custom
+ {:in
+  {:binary "custom",
+   :dir "/tmp/cache",
+   :format "best",
+   :max-bytes 123,
+   :cookies-from-browser "firefox",
+   :extra-args ["--verbose"]},
+  :out
+  ["custom"
+   "--ignore-config"
+   "--no-playlist"
+   "--no-progress"
+   "--no-simulate"
+   "--socket-timeout"
+   "30"
+   "--retries"
+   "3"
+   "--fragment-retries"
+   "3"
+   "-f"
+   "best"
+   "-o"
+   "/tmp/cache/%(id)s.%(ext)s"
+   "--print"
+   "after_move:%(filepath)s\t%(title)s\t%(duration)s\t%(ext)s"
+   "--max-filesize"
+   "123"
+   "--cookies-from-browser"
+   "firefox"
+   "--verbose"
+   "--"
+   "https://example.invalid/video"]},
+ :default
+ {:in {},
+  :out
+  ["yt-dlp"
+   "--ignore-config"
+   "--no-playlist"
+   "--no-progress"
+   "--no-simulate"
+   "--socket-timeout"
+   "30"
+   "--retries"
+   "3"
+   "--fragment-retries"
+   "3"
+   "-f"
+   "bv*+ba/b"
+   "-o"
+   "./%(id)s.%(ext)s"
+   "--print"
+   "after_move:%(filepath)s\t%(title)s\t%(duration)s\t%(ext)s"
+   "--"
+   "https://example.invalid/video"]}}

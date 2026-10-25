@@ -1,0 +1,13 @@
+{:audio
+ {:in {:exit 0, :out "5\tNA\tNA"}, :out {:ok {:duration-seconds 5.0}}},
+ :failed
+ {:in {:exit 2, :out ""}, :out {:error :error/probe-failed, :exit 2}},
+ :none
+ {:in {:exit 0, :out "NA\t0\t0"},
+  :out {:error :error/probe-no-duration}},
+ :timeout
+ {:in {:exit 0, :out "5\t1920\t1080", :timed-out? true},
+  :out {:error :error/probe-timeout}},
+ :video
+ {:in {:exit 0, :out "5\t1920\t1080"},
+  :out {:ok {:duration-seconds 5.0, :width 1920, :height 1080}}}}
