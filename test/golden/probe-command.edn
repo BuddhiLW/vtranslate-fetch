@@ -1,0 +1,34 @@
+{:custom
+ {:in {:binary "custom", :socket-timeout-s 7},
+  :out
+  ["custom"
+   "--ignore-config"
+   "--no-playlist"
+   "--no-progress"
+   "--simulate"
+   "--skip-download"
+   "--socket-timeout"
+   "7"
+   "--retries"
+   "1"
+   "--print"
+   "%(duration)s\t%(width)s\t%(height)s"
+   "--"
+   "https://example.invalid/video"]},
+ :default
+ {:in {},
+  :out
+  ["yt-dlp"
+   "--ignore-config"
+   "--no-playlist"
+   "--no-progress"
+   "--simulate"
+   "--skip-download"
+   "--socket-timeout"
+   "15"
+   "--retries"
+   "1"
+   "--print"
+   "%(duration)s\t%(width)s\t%(height)s"
+   "--"
+   "https://example.invalid/video"]}}

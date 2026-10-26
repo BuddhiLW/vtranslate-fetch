@@ -10,7 +10,8 @@
  :deps {org.clojure/clojure                 {:mvn/version "1.12.5"}
         io.github.hive-agi/hive-dsl         {:mvn/version "0.5.19"}
         io.github.hive-agi/hive-system      {:mvn/version "0.3.8"}
-        io.github.buddhilw/vtranslate-engine {:mvn/version "0.1.2"}}
+        io.github.buddhilw/vtranslate-engine {:mvn/version "0.1.2"}
+        metosin/malli {:mvn/version "0.20.1"}}
 
  :aliases
  {:engine
@@ -26,7 +27,8 @@
                       io.github.hive-agi/hive-events       {:mvn/version "0.5.9"}
                       io.github.hive-agi/hive-weave        {:mvn/version "0.3.4"}
                       io.github.hive-agi/hive-system       {:mvn/version "0.3.8"}
-                      io.github.buddhilw/vtranslate-engine {:mvn/version "0.1.2"}}
+                      io.github.buddhilw/vtranslate-engine {:mvn/version "0.1.2"}
+                      io.github.hive-agi/hive-test {:mvn/version "0.4.5"}}
          :main-opts ["-m" "kaocha.runner"]}
 
   :test-repl {:extra-paths ["test"]
